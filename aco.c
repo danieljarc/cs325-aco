@@ -15,10 +15,9 @@
 #define COLONY_SIZE		30		// Total ants [Default: 30]
 #define ALPHA			1		// Influence of pheromones [Default: 1.0]
 #define BETA			3		// Influence of visibility [Default: 3.0]
-#define RHO 			0.3		// Pheromone evaporation rate [Default: 0.1]
+#define RHO				0.3		// Pheromone evaporation rate [Default: 0.1]
 #define Q				1.0		// Used to calculate pheromone change [Default 1.0]
-
-int n; 							// Number of cities
+int n;							// Number of cities
 
 /***************************************************************
 * struct city [WORKING]
@@ -318,7 +317,7 @@ void evaporatePheromones(double ** pheromone){
 }
 
 /***************************************************************
-* outputResults() [ERRORS IN VALGRIND]
+* outputResults() [WORKING]
 * Description:
 ***************************************************************/
 void outputResult(int * path, int pathDistance, const char * filename){
@@ -326,18 +325,26 @@ void outputResult(int * path, int pathDistance, const char * filename){
 	int i;
 	FILE * fp_out;
 	char * filename_out;
+	int filenameLength;
 	
-	filename_out = malloc(strlen(filename + 6));
+	// Create output filename
+	filenameLength = strlen(filename);
+	filename_out = malloc(filenameLength + 6);
 	sprintf(filename_out, "%s.tour", filename);
 	
-	fp_out = fopen(filename_out, "w");	
-	fprintf(fp_out, "%d\n", pathDistance);
+	// Open file
+	fp_out = fopen(filename_out, "w");
 	
+	// Copy path distance and cities
+	fprintf(fp_out, "%d\n", pathDistance);
 	for(i=0; i < n; i++){
 		fprintf(fp_out, "%d\n", path[i]);
 	}
 	
+	// Close file
 	fclose(fp_out);
+	
+	// Free memory
 	free(filename_out);
 	filename_out = NULL;
 }
