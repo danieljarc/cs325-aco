@@ -1,9 +1,7 @@
-# CS325 TSP
+# CS325 TSP Project
 
-### Prerequisites
-
-What things you need to install the software and how to install them
+ACO implemetation in C to solve TSP. To compile use:
 
 ```
-Give examples
+gcc -o aco aco.c -lm
 ```
