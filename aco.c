@@ -11,17 +11,19 @@
 #include <time.h>
 
 #define TOKEN_DELIM " \t\r\n\a"	// Token delimiter characters
-#define ITERATIONS		200		// Total iterations [Default: 200]
-#define COLONY_SIZE		30		// Total ants [Default: 30]
-#define ALPHA			1		// Influence of pheromones [Default: 1.0]
-#define BETA			3		// Influence of visibility [Default: 3.0]
-#define RHO				0.3		// Pheromone evaporation rate [Default: 0.1]
-#define Q				1.0		// Used to calculate pheromone change [Default 1.0]
+#define ITERATIONS		80		// Total iterations [Default: 200]
+#define COLONY_SIZE		20		// Total ants [Default: 30]
+#define ALPHA			1.0		// Influence of pheromones [Default: 1.0]
+#define BETA			12.0	// Influence of visibility [Default: 12.0]
+#define RHO				0.1		// Pheromone evaporation rate variable [Default: 0.1]
+#define Q				1.0		// Calculates pheromone change based on: Q /tour length [Default 1.0]
+#define THRESHOLD		0.8		// The highest probability city is automatically chosen if the ant rolls above this value [Default: 0.8]
+
 int n;							// Number of cities
 
 /***************************************************************
-* struct city [WORKING]
-* Description: 
+* struct city
+* Description: Holds city information.
 ***************************************************************/
 struct city {
 	
@@ -31,8 +33,8 @@ struct city {
 };
 
 /***************************************************************
-* loadFile() [WORKING]
-* Description: 
+* loadFile()
+* Description: Loads file data.
 ***************************************************************/
 struct city * loadFile(const char * filename) {
 
@@ -101,8 +103,8 @@ struct city * loadFile(const char * filename) {
 }
 
 /***************************************************************
-* init2DArray() [WORKING]
-* Description: 
+* init2DArray()
+* Description: Initializes 2D double array
 ***************************************************************/
 void init2DArray(double **arr, double val){
 	
@@ -116,8 +118,8 @@ void init2DArray(double **arr, double val){
 }
 
 /***************************************************************
-* init1DArray() [WORKING]
-* Description: 
+* init1DArray()
+* Description: Initializes 1D int array.
 ***************************************************************/
 void init1DArray(int * arr, int val){
 	
@@ -129,8 +131,8 @@ void init1DArray(int * arr, int val){
 }
 
 /***************************************************************
-* printArray() [WORKING]
-* Description: 
+* printArray()
+* Description: Prints 2D double array.
 ***************************************************************/
 void printArray(double **arr){
 	
@@ -145,8 +147,8 @@ void printArray(double **arr){
 }
 
 /***************************************************************
-* printCities() [WORKING]
-* Description:
+* printCities()
+* Description: Prints list of city structs. 
 ***************************************************************/
 void printCities(struct city * cities){
 
@@ -157,8 +159,8 @@ void printCities(struct city * cities){
 }
 
 /***************************************************************
-* printPath() [WORKING]
-* Description: 
+* printPath()
+* Description: Prints path. 
 ***************************************************************/
 void printPath(int * arr){
 	
@@ -170,8 +172,8 @@ void printPath(int * arr){
 }
 
 /***************************************************************
-* calculateDistances() [WORKING]
-* Description: 
+* calculateDistances()
+* Description: Calculates distances between cities.
 ***************************************************************/
 void calculateDistances(struct city * cities, double ** distance){
 	
@@ -189,8 +191,8 @@ void calculateDistances(struct city * cities, double ** distance){
 }
 
 /***************************************************************
-* calculateVisibility\ies() [WORKING]
-* Description: 
+* calculateVisibilities()
+* Description: Calculates visibility between cities.
 ***************************************************************/
 void calculateVisibilities(double ** distance, double ** visibility){
 	
@@ -209,15 +211,17 @@ void calculateVisibilities(double ** distance, double ** visibility){
 
 
 /***************************************************************
-* antSeek() [REFACTOR]
-* Description: 
+* antSeek()
+* Description: Seeks path through cities based on visibility, 
+* pheromones, memory and randomized choice variable. 
 ***************************************************************/
 int antSeek(double ** distance, double ** visibility, double ** pheromone, double ** probability, int * visited, int location, int * path){
 	
 	int i, j; 
 	int distanceTraveled = 0;
 	double probabilitySummation;
-	double maxProbability; 
+	double maxProbability;
+	int maxProbabilityCity; 
 	double randomProbability;
 	int selectedCity;
 
@@ -255,17 +259,25 @@ int antSeek(double ** distance, double ** visibility, double ** pheromone, doubl
 			probability[location][j] /= probabilitySummation;
 			if(probability[location][j] >= maxProbability){
 				maxProbability = probability[location][j];
+				maxProbabilityCity = j;
 			}
 		}
 		
 		// Generate randomized probability influencing ant's choice
 		randomProbability = ((double)rand()) / ((double)RAND_MAX);
-		randomProbability *= maxProbability;
 		
-		// Select next city based on randomized probability, probability matrix and cities visited
-		for(j=0; j < n; j++){
-			if((randomProbability <= probability[location][j]) && (visited[j] == 0)){
-				selectedCity = j;
+		if(randomProbability >= THRESHOLD){
+			selectedCity = maxProbabilityCity;
+			
+		}else{
+		
+			randomProbability *= maxProbability;
+	
+			// Select next city based on randomized probability, probability matrix and cities visited
+			for(j=0; j < n; j++){
+				if(randomProbability <= probability[location][j]){
+					selectedCity = j;
+				}
 			}
 		}
 
@@ -278,8 +290,8 @@ int antSeek(double ** distance, double ** visibility, double ** pheromone, doubl
 }
 
 /***************************************************************
-* antTrace(); [WORKING]
-* Description: 
+* antTrace()
+* Description: Retraces path, depositing pheromones.
 ***************************************************************/
 void antTrace(int * path, double ** pheromone, double pheromoneToAdd){
 
@@ -300,8 +312,8 @@ void antTrace(int * path, double ** pheromone, double pheromoneToAdd){
 }
 
 /***************************************************************
-* updatePheromones() [WORKING]
-* Description:
+* updatePheromones()
+* Description: Globally evaporates pheromones.
 ***************************************************************/
 void evaporatePheromones(double ** pheromone){	
 	
@@ -310,15 +322,15 @@ void evaporatePheromones(double ** pheromone){
 
 	// Globally evaporate phereomones
 	for (i = 0; i < n; i++){
-		for (j = 0; j < n; j++) {
+		for (j = 0; j < n; j++){
 			pheromone[i][j] *= delta;
 		}
 	}
 }
 
 /***************************************************************
-* outputResults() [WORKING]
-* Description:
+* outputResults()
+* Description: Outputs results to file, displays results.
 ***************************************************************/
 void outputResult(int * path, int pathDistance, const char * filename){
 	
@@ -337,10 +349,13 @@ void outputResult(int * path, int pathDistance, const char * filename){
 	
 	// Copy path distance and cities
 	fprintf(fp_out, "%d\n", pathDistance);
+	
+	printf("DIST: %d\n", pathDistance);
+	
 	for(i=0; i < n; i++){
 		fprintf(fp_out, "%d\n", path[i]);
 	}
-	
+
 	// Close file
 	fclose(fp_out);
 	
@@ -350,12 +365,13 @@ void outputResult(int * path, int pathDistance, const char * filename){
 }
 
 /***************************************************************
-* aco() [REFACTOR]
-* Description:
+* aco()
+* Description: Calculates approximation of optimal tour between
+* cities, then outputs to [input_filename].tour
 ***************************************************************/
 void aco(struct city * cities, const char * filename){
 	
-	int i, j; 
+	int i, j;
 	double ** distance;
 	double ** visibility;
 	double ** pheromone;
@@ -366,7 +382,7 @@ void aco(struct city * cities, const char * filename){
 	int ant;
 	int pathDistance; 
 	double pheromoneToAdd;
-	
+
 	// Allocate arrays
 	distance = malloc(n * sizeof(double *));
 	visibility = malloc(n * sizeof(double *));
@@ -387,18 +403,19 @@ void aco(struct city * cities, const char * filename){
 	init2DArray(visibility, 0.0);	
 	init2DArray(pheromone, 1.0);
 	
-	// Calulate distances and visibilites between cities
+	// Calculate distances and visibility between cities
 	calculateDistances(cities, distance); 
 	calculateVisibilities(distance, visibility);
 	
 	// Choose random starting city for ants
-	location = rand() % n;
+	//location = rand() % n;
+	location = 0;
 	
 	// For desired iterations
 	for(i = 0; i < ITERATIONS; i++){
 		
 		// For each ant in the colony
-		for (ant = 0; ant < COLONY_SIZE; ant++) {
+		for (ant = 0; ant < COLONY_SIZE; ant++){																
 			
 			pathDistance = antSeek(distance, visibility, pheromone, probability, visited, location, path);
 			pheromoneToAdd = Q / pathDistance;
@@ -463,7 +480,9 @@ int main(int argc, char* argv[]) {
 	// filename and cities array
 	const char * filename = argv[1];
 	struct city * cities;
-
+	clock_t begin, end;
+	double time_spent;
+	
 	// Error check - incorrect command line argument
 	if(filename == NULL){
 		fprintf(stderr, "Usage: aco [filename]\n");
@@ -475,7 +494,19 @@ int main(int argc, char* argv[]) {
 	
 	// Load cities, run ACO
 	cities = loadFile(filename);
+	
+	// Start time
+	begin = clock();
+	
+	// Run ACO 
 	aco(cities, filename);
+	
+	// End time
+	end = clock();
+	
+	// Display time
+	time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
+	printf("TIME: %lf\n", time_spent);
 	
 	// Free memory
 	if(cities != NULL){
